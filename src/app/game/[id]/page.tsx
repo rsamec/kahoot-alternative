@@ -1,7 +1,7 @@
 'use client'
 
 import React, { FormEvent, useEffect, useState } from 'react'
-import { Choice, Player, Question, Game, gameId, supabase } from '@/types/types'
+import { Choice, Player, Question, Game, supabase } from '@/types/types'
 import { RealtimeChannel } from '@supabase/supabase-js'
 
 enum Screens {
@@ -32,13 +32,13 @@ export default function Home({
       .from('questions')
       .select(`*, choices(*)`)
       .order('order', { ascending: true })
+      
     if (error) {
-      getQuestions()
-      return
+      return alert(error.message)
     }
     setQuestions(data)
 
-    const choiceCount = data.map((rows: Question) => rows.choices.length)
+    const choiceCount = data.map((rows: Question) => rows.choices?.length)
 
     const correctCount = data.map(
       (rows) =>
@@ -86,11 +86,12 @@ export default function Home({
     <main className="flex min-h-screen flex-col items-center justify-between p-12">
       <div className="max-w-md m-auto p-8 bg-black  text-white">
         {currentScreen == Screens.register && (
-          <Register onRegisterCompleted={onRegisterCompleted}></Register>
+          <Register gameId={gameId} onRegisterCompleted={onRegisterCompleted}></Register>
         )}
         {currentScreen == Screens.lobby && <Lobby player={player!}></Lobby>}
         {currentScreen == Screens.quiz && (
           <Quiz
+            gameId={gameId}
             question={questions![currentQuestionSequence]}
             questionCount={questions!.length}
             playerId={player!.id}
@@ -114,10 +115,12 @@ function Results({ player }: { player: Player }) {
 }
 
 function Quiz({
+  gameId,
   question: question,
   questionCount: questionCount,
   playerId,
 }: {
+  gameId:string,
   question: Question
   questionCount: number
   playerId: string
@@ -143,11 +146,12 @@ function Quiz({
     const { error } = await supabase.from('answers').insert({
       player_id: playerId,
       choice_id: choiceId,
+      game_id: gameId,
       time: 100,
     })
     if (error) {
       setHasAnswered(false)
-      alert(error.message)
+      return alert(error.message)
     }
   }
 
@@ -157,10 +161,10 @@ function Quiz({
         {question.order + 1}/{questionCount}
       </div>
 
-      <h1 className="pb-4 text-xl">{question.body}</h1>
+      <div dangerouslySetInnerHTML={{__html:question.body}}></div>
       {hasShownChoices && (
         <div className="flex justify-between flex-wrap">
-          {question.choices.map((choice) => (
+          {question.choices?.map((choice) => (
             <div key={choice.id} className="w-1/2 p-1">
               <button
                 disabled={hasAnswered}
@@ -178,7 +182,7 @@ function Quiz({
                   : 'bg-green-500'
               }`}
               >
-                {choice.body}
+                <div dangerouslySetInnerHTML={{__html:choice.body}}></div>
               </button>
             </div>
           ))}
@@ -224,8 +228,10 @@ function Lobby({ player }: { player: Player }) {
 }
 
 function Register({
+  gameId,
   onRegisterCompleted: onRegisterComplete,
 }: {
+  gameId:string,
   onRegisterCompleted: (player: Player) => void
 }) {
   const onFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -243,7 +249,6 @@ function Register({
 
     if (error) {
       setSending(false)
-
       return alert(error.message)
     }
 

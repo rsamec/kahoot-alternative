@@ -11,11 +11,15 @@ export type Player = Database['public']['Tables']['players']['Row']
 export type Choice = Database['public']['Tables']['choices']['Row']
 
 export type Question = Database['public']['Tables']['questions']['Row'] & {
-  choices: Choice[]
+  choices?: Choice[]
+}
+
+export type Quiz = Database['public']['Tables']['quizes']['Row'] & {
+  questions?: Question[]
 }
 
 export type Answer = Database['public']['Tables']['answers']['Row']
 
 export type Game = Database['public']['Tables']['games']['Row']
 
-export const gameId = 'bb2ddb95-f632-48bd-a042-eb07b3f7ef8d'
+//export const gameId = 'bb2ddb95-f632-48bd-a042-eb07b3f7ef8d'

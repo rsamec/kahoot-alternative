@@ -1,14 +1,15 @@
 'use client'
 
+import QRCode from '@/components/qr-code'
 import {
   Answer,
   Choice,
   Player,
   Question,
   Game,
-  gameId,
   supabase,
 } from '@/types/types'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 enum AdminScreens {
@@ -36,18 +37,28 @@ export default function Home({
   }, [])
 
   const getQuestions = async () => {
+    const { data: gameData } = await supabase
+      .from("games")
+      .select("*")
+      .eq('id', gameId)
+      .single()
+
+    if (gameData == null) {
+      return;
+    }
+
+
     const { data, error } = await supabase
       .from('questions')
       .select(`*, choices(*)`)
-      .eq('game_id', gameId)
+      .eq('quiz_id', gameData.quiz_id)
       .order('order', { ascending: true })
     if (error) {
-      getQuestions()
-      return
+      return alert(error.message)
     }
     setQuestions(data)
 
-    const choiceCount = data.map((rows: Question) => rows.choices.length)
+    const choiceCount = data.map((rows: Question) => rows.choices?.length)
 
     const correctCount = data.map(
       (rows) =>
@@ -100,16 +111,17 @@ export default function Home({
     <main className="flex min-h-screen flex-col items-center justify-between p-12">
       <div className="m-auto p-8 bg-black  text-white">
         {currentScreen == AdminScreens.lobby && (
-          <Lobby players={players}></Lobby>
+          <Lobby gameId={gameId} players={players}></Lobby>
         )}
         {currentScreen == AdminScreens.quiz && (
           <Quiz
+            gameId={gameId}
             question={questions![currentQuestionSequence]}
             questionCount={questions!.length}
           ></Quiz>
         )}
         {currentScreen == AdminScreens.results && (
-          <Results players={players!} questions={questions!}></Results>
+          <Results gameId={gameId} players={players!} questions={questions!}></Results>
         )}
       </div>
     </main>
@@ -119,7 +131,9 @@ export default function Home({
 function Results({
   players,
   questions: questions,
+  gameId
 }: {
+  gameId: string,
   players: Player[]
   questions: Question[]
 }) {
@@ -132,7 +146,10 @@ function Results({
   >([])
 
   const getResults = async () => {
-    const { data, error } = await supabase.from('answers').select()
+    const { data, error } = await supabase.from('answers')
+      .select()
+      .eq("game_id", gameId);
+
     if (error) {
       return alert(error.message)
     }
@@ -141,12 +158,12 @@ function Results({
     const correctAnswers = answers.filter((answer) => {
       const targetQuestion = questions.find((question) => {
         return question.choices
-          .map((choice) => choice.id)
+          ?.map((choice) => choice.id)
           .includes(answer.choice_id)
       })
       if (!targetQuestion) return false
 
-      const targetChoice = targetQuestion.choices.find((choice) => {
+      const targetChoice = targetQuestion.choices?.find((choice) => {
         return choice.id == answer.choice_id
       })
 
@@ -204,9 +221,11 @@ function Results({
 }
 
 function Quiz({
+  gameId,
   question: question,
   questionCount: questionCount,
 }: {
+  gameId: string,
   question: Question
   questionCount: number
 }) {
@@ -226,6 +245,7 @@ function Quiz({
       .from('games')
       .update(updateData)
       .eq('id', gameId)
+
     if (error) {
       return alert(error.message)
     }
@@ -246,22 +266,21 @@ function Quiz({
         {question.order + 1}/{questionCount}
       </div>
 
-      <h1 className="pb-4 text-xl">{question.body}</h1>
+      <div dangerouslySetInnerHTML={{ __html: question.body }}></div>
       {hasShownChoices && (
         <div className="flex justify-between flex-wrap">
-          {question.choices.map((choice) => (
+          {question.choices?.map((choice) => (
             <div key={choice.id} className="w-1/2 p-1">
               <div
                 className={`p-2 w-full text-center 
-              ${
-                hasShownAnswer
-                  ? choice.is_correct
-                    ? 'bg-green-500'
-                    : 'bg-gray-400'
-                  : 'bg-green-500'
-              }`}
+              ${hasShownAnswer
+                    ? choice.is_correct
+                      ? 'bg-green-500'
+                      : 'bg-gray-400'
+                    : 'bg-green-500'
+                  }`}
               >
-                {choice.body}
+                <div dangerouslySetInnerHTML={{ __html: choice.body }}></div>
               </div>
             </div>
           ))}
@@ -310,7 +329,7 @@ function Quiz({
   )
 }
 
-function Lobby({ players }: { players: Player[] }) {
+function Lobby({ gameId, players }: { gameId:string, players: Player[] }) {  
   const onClickStartGame = async () => {
     const { data, error } = await supabase
       .from('games')
@@ -320,6 +339,7 @@ function Lobby({ players }: { players: Player[] }) {
       return alert(error.message)
     }
   }
+
 
   return (
     <div className="flex justify-between">
@@ -340,7 +360,10 @@ function Lobby({ players }: { players: Player[] }) {
         </button>
       </div>
       <div className="w-1/2">
-        <img src="/qr.png" alt="QR code" />
+        
+          <QRCode data={`/game/${gameId}`} width={400} />
+          <Link href={`/game/${gameId}`} target='_blank' >Unique Game Link</Link>
+        
       </div>
     </div>
   )
