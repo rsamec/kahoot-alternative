@@ -10,6 +10,7 @@ import {
   supabase,
 } from '@/types/types'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 enum AdminScreens {
@@ -330,6 +331,7 @@ function Quiz({
 }
 
 function Lobby({ gameId, players }: { gameId:string, players: Player[] }) {  
+  const [basePath, setBasePath] = useState<string | null>(null)
   const onClickStartGame = async () => {
     const { data, error } = await supabase
       .from('games')
@@ -339,6 +341,10 @@ function Lobby({ gameId, players }: { gameId:string, players: Player[] }) {
       return alert(error.message)
     }
   }
+  useEffect(() => {
+    setBasePath(`${window.location.protocol}//${window.location.host}`)
+  }, [gameId])
+  
 
 
   return (
@@ -361,7 +367,7 @@ function Lobby({ gameId, players }: { gameId:string, players: Player[] }) {
       </div>
       <div className="w-1/2">
         
-          <QRCode data={`/game/${gameId}`} width={400} />
+          <QRCode data={`${basePath}/game/${gameId}`} width={400} />
           <Link href={`/game/${gameId}`} target='_blank' >Unique Game Link</Link>
         
       </div>

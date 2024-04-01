@@ -56,3 +56,9 @@ export default function Home() {
     </main>
   )
 }
+
+// export async function generateStaticParams() {
+//   return [];  
+//   // const posts = getDocumentSlugs(collection)
+//   // return posts.map((slug) => ({ slug }))
+// }
