@@ -29,18 +29,20 @@ export default function Home({
 
   const getQuestions = async () => {
     const { data, error } = await supabase
-      .from('questions')
-      .select(`*, choices(*)`)
-      .order('order', { ascending: true })
-      
+      .from("games")
+      .select("*, quizes(*, questions(*, choices(*)))")
+      .eq('id', gameId)
+      .single()
+
     if (error) {
       return alert(error.message)
     }
-    setQuestions(data)
+    const quizQuestions = (data.quizes?.questions ?? []).sort((f,s) => f.order - s.order);
+    setQuestions(quizQuestions)
 
-    const choiceCount = data.map((rows: Question) => rows.choices?.length)
+    const choiceCount = quizQuestions.map((rows: Question) => rows.choices?.length)
 
-    const correctCount = data.map(
+    const correctCount = quizQuestions.map(
       (rows) =>
         rows.choices.filter((choice: Choice) => choice.is_correct).length
     )
@@ -83,7 +85,7 @@ export default function Home({
   }, [gameId])
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-12">
+    <main className="flex min-h-screen flex-col items-center justify-between p-2 md:p-4 lg:p-12">
       <div className="max-w-md m-auto p-8 bg-black  text-white">
         {currentScreen == Screens.register && (
           <Register gameId={gameId} onRegisterCompleted={onRegisterCompleted}></Register>
@@ -120,7 +122,7 @@ function Quiz({
   questionCount: questionCount,
   playerId,
 }: {
-  gameId:string,
+  gameId: string,
   question: Question
   questionCount: number
   playerId: string
@@ -160,34 +162,35 @@ function Quiz({
       <div className="absolute left-4 top-4">
         {question.order + 1}/{questionCount}
       </div>
-
-      <div dangerouslySetInnerHTML={{__html:question.body}}></div>
+      <div className='flex flex-col gap-2'>
+      <div dangerouslySetInnerHTML={{ __html: question.body }}></div>
       {hasShownChoices && (
-        <div className="flex justify-between flex-wrap">
+        <div className="flex gap-2 flex-wrap">
           {question.choices?.map((choice) => (
-            <div key={choice.id} className="w-1/2 p-1">
+            <div key={choice.id} className="">
               <button
                 disabled={hasAnswered}
                 onClick={() => answer(choice.id)}
-                className={`p-2 w-full text-center 
-              ${
-                hasAnswered
-                  ? selectedChoiceId == choice.id
-                    ? choice.is_correct
-                      ? 'bg-green-500'
-                      : 'bg-red-500'
-                    : choice.is_correct
-                    ? 'bg-green-500'
-                    : 'bg-gray-400'
-                  : 'bg-green-500'
-              }`}
+                className={`p-2 text-left
+              ${hasAnswered
+                    ? selectedChoiceId == choice.id
+                      ? choice.is_correct
+                        ? 'bg-green-500'
+                        : 'bg-red-500'
+                      : choice.is_correct
+                        ? 'bg-green-500'
+                        : 'bg-gray-400'
+                    : 'bg-gray-500'
+                  }`}
               >
-                <div dangerouslySetInnerHTML={{__html:choice.body}}></div>
+                <div dangerouslySetInnerHTML={{ __html: choice.body }}></div>
               </button>
             </div>
+
           ))}
         </div>
       )}
+      </div>
       {!hasShownChoices && (
         <div className="text-center">
           <div role="status">
@@ -231,7 +234,7 @@ function Register({
   gameId,
   onRegisterCompleted: onRegisterComplete,
 }: {
-  gameId:string,
+  gameId: string,
   onRegisterCompleted: (player: Player) => void
 }) {
   const onFormSubmit = async (e: FormEvent<HTMLFormElement>) => {

@@ -45,14 +45,15 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-12">
-      <div className="m-auto p-8 bg-black  text-white">Host Home</div>
+      <div className="max-w-2xl flex gap-2 flex-wrap items-center ">
       {
         quizes.map(d => 
-        <button key={d.id} disabled={sending} className="w-full py-2 bg-green-500 mt-4" 
+        <button key={d.id} disabled={sending} className="p-2 bg-black text-white" 
           onClick={() => onClickNewGame(d.id)}>
-            {d.code} - Questions: ({d.questions?.length ?? 0})
+            {d.code} - ({d.questions?.length ?? 0})
         </button>)
       }
+      </div>
     </main>
   )
 }
