@@ -357,10 +357,10 @@ function Lobby({ gameId, players }: { gameId: string, players: Player[] }) {
           Start Game
         </button>
       </div>
-      <div className="w-1/2">
+      <div className="w-1/2 flex flex-col gap-2">
 
         <QRCode data={`${basePath}/game/${gameId}`} width={400} />
-        <Link href={`/game/${gameId}`} target='_blank' >Unique Game Link</Link>
+        <Link className='self-end' href={`/game/${gameId}`} target='_blank' >Open players link</Link>
 
       </div>
     </div>
