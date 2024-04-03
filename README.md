@@ -27,3 +27,8 @@ supabase gen types typescript --local --schema public > src/types/supabase.ts
 Access the project root at `/` to join as a player.
 
 Access `/host` to join as a host.
+
+
+## Database entities
+
+![alt text](image.png)
